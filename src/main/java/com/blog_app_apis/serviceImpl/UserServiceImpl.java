@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
+
         @Autowired
         private UserRepo userRepo;
 
@@ -43,10 +44,18 @@ public class UserServiceImpl implements UserService {
 
         User user = getUserOrThrow(userId);
 
-        user.setName(userDTO.getName());
-        user.setEmail(userDTO.getEmail());
-        user.setPassword(userDTO.getPassword());
-        user.setAbout(userDTO.getAbout());
+        if (userDTO.getName() != null)
+            user.setName(userDTO.getName());
+
+        if (userDTO.getEmail() != null)
+            user.setEmail(userDTO.getEmail());
+
+        if (userDTO.getPassword() != null)
+            user.setPassword(userDTO.getPassword());
+
+        if (userDTO.getAbout() != null)
+            user.setAbout(userDTO.getAbout());
+
         try {
             return userToDto(userRepo.save(user));
         } catch (DataIntegrityViolationException ex) {
