@@ -12,19 +12,20 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController("/api/users")
+@RestController
+@RequestMapping("/api/users")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
-    @PostMapping(path = "/createUser", produces = "application/JSON", consumes = "application/JSON")
+    @PostMapping(path = "/createUser")
     public ResponseEntity<UserDTO> createUser( @Valid  @RequestBody UserDTO userDTO) throws Exception{
         UserDTO createUserDTO = this.userService.createUser(userDTO);
         return new ResponseEntity<>(createUserDTO, HttpStatus.CREATED);
     }
     @PutMapping("/updateUser/{userId}")
-    public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @PathVariable("userId") Integer userId) throws InvalidMailException {
+    public ResponseEntity<UserDTO> updateUser( @Valid @RequestBody UserDTO userDTO, @PathVariable("userId") Integer userId) throws InvalidMailException {
         UserDTO updateUser = this.userService.updateUser(userDTO,userId);
         return ResponseEntity.ok(updateUser);
     }
@@ -36,9 +37,13 @@ public class UserController {
     }
 
     @GetMapping("/AllUsers")
-    public ResponseEntity<List<UserDTO>> getAllUser(){
+    public ResponseEntity<List<UserDTO>> getAllUsers(){
         return ResponseEntity.ok(this.userService.getAllUsers());
     }
 
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserDTO> getSingleUser(@PathVariable Integer userId){
+        return ResponseEntity.ok(this.userService.getUserById(userId));
+    }
 
 }
