@@ -1,5 +1,6 @@
 package com.blog_app_apis.dtos;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
+@JsonPropertyOrder({ "id", "name", "email", "password", "about" })
 public class UserDTO {
     private Integer id;
     @NotBlank
