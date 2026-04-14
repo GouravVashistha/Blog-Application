@@ -14,7 +14,6 @@ import lombok.Setter;
 @Setter
 @JsonPropertyOrder({"id", "name", "email", "password", "about"})
 public class UserDTO {
-    private Integer id;
     @NotEmpty
     @Size(min = 4, message = "User must be min  of 4 Character")
     private String name;
