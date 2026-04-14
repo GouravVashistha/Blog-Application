@@ -17,7 +17,7 @@ public class PostDTO {
     private String content;
 
     private String imageName;
-
+    
     private Date date;
 
     private CategroyDTO category;
