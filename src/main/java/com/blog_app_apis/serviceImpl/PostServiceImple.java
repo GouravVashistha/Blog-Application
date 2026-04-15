@@ -78,15 +78,33 @@ public class PostServiceImple implements PostService {
         return null;
     }
 
+    //==================================== Get Post by catagory ==================================================
+
     @Override
     public List<PostDTO> getPostByCategory(Integer categoryId) {
-        return List.of();
+
+        Category cat = this.categoryRepo.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "CategoryId", categoryId));
+
+        return this.postRepo.findByCategory(cat)
+                .stream()
+                .map((post) -> this.modelMapper.map(post, PostDTO.class))
+                .toList();
     }
+//==================================== Get Post by User ===========================================================
 
     @Override
     public List<PostDTO> getPostByUser(Integer userId) {
-        return List.of();
+        User users = this.userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "userid", userId));
+
+        return this.postRepo.findByUser(users)
+                .stream()
+                .map((post) -> this.modelMapper.map(post, PostDTO.class))
+                .toList();
     }
+
+    //====================================== Search Post ======================================================
 
     @Override
     public List<PostDTO> searchPosts(String keyword) {
