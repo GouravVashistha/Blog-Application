@@ -73,9 +73,14 @@ public class PostServiceImple implements PostService {
         return null;
     }
 
+    //======================================= Get Post By Id===============================================
+    
     @Override
     public PostDTO getPostById(Integer postId) {
-        return null;
+        Post post = this.postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "PostId", postId));
+
+        return this.modelMapper.map(post, PostDTO.class);
     }
 
     //==================================== Get Post by catagory ==================================================
