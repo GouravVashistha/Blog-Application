@@ -12,6 +12,10 @@ import com.blog_app_apis.repository.UserRepo;
 import com.blog_app_apis.service.PostService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -74,13 +78,36 @@ public class PostServiceImple implements PostService {
     }
 
 //========================================= Get All the Post =============================================
-    
+
     @Override
     public PostResponce getAllPost(Integer pageNumber, Integer pageSize, String sortBy, String sortDir) {
-//        List<Post> allPosts = this.postRepo.findAll();
-//        List<PostDTO> postDTOS = allPosts.stream().map((post) -> modelMapper.map(post, PostDTO.class)).toList();
-        return null;
 
+        Sort sort = null;
+        if (sortDir.equalsIgnoreCase("asc")) {
+            sort = sort.by(sortBy).ascending();
+
+        } else {
+            sort = sort.by(sortBy).descending();
+        }
+
+        Pageable p = PageRequest.of(pageNumber, pageSize, sort);
+
+        Page<Post> pagePost = this.postRepo.findAll(p);
+        List<Post> allPosts = pagePost.getContent();
+
+        List<PostDTO> postDtos = allPosts.stream().map((post) -> this.modelMapper.map(post, PostDTO.class))
+                .collect(Collectors.toList());
+
+        PostResponce postResponce = new PostResponce();
+        postResponce.setContent(postDtos);
+        postResponce.setPageNumber(pagePost.getNumber());
+        postResponce.setPageSize(pagePost.getSize());
+        postResponce.setTotalElements(pagePost.getTotalElements());
+        postResponce.setTotalPages(pagePost.getTotalPages());
+        postResponce.setLastpage(pagePost.isLast());
+
+
+        return postResponce;
     }
 
     //======================================= Get Post By Id===============================================

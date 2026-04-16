@@ -1,7 +1,9 @@
 package com.blog_app_apis.controllers;
 
+import com.blog_app_apis.config.AppConstants;
 import com.blog_app_apis.dtos.ApiResponse;
 import com.blog_app_apis.dtos.PostDTO;
+import com.blog_app_apis.dtos.PostResponce;
 import com.blog_app_apis.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -70,4 +72,13 @@ public class PostController {
         return new ResponseEntity<List<PostDTO>>(result, HttpStatus.OK);
     }
 
+    @GetMapping("/allposts")
+    public ResponseEntity<PostResponce> getAllPost(@RequestParam(value = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
+                                                   @RequestParam(value = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
+                                                   @RequestParam(value = "sortBy", defaultValue = AppConstants.SORT_BY, required = false) String sortBy,
+                                                   @RequestParam(value = "sortDir", defaultValue = AppConstants.SORT_DIR, required = false) String sortDir
+    ) {
+        PostResponce postResponce = this.postService.getAllPost(pageNumber, pageSize, sortBy, sortDir);
+        return new ResponseEntity<PostResponce>(postResponce, HttpStatus.OK);
+    }
 }
