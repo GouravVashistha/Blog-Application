@@ -74,12 +74,7 @@ public class PostServiceImple implements PostService {
     }
 
 //========================================= Get All the Post =============================================
-
-    /*
-     * for Gettig all post we need to implementation pagination
-     * by import "import org.springframework.data.domain.Pageable;"
-     *
-     **/
+    
     @Override
     public PostResponce getAllPost(Integer pageNumber, Integer pageSize, String sortBy, String sortDir) {
 //        List<Post> allPosts = this.postRepo.findAll();
