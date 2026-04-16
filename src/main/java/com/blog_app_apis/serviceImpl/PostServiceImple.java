@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PostServiceImple implements PostService {
@@ -62,24 +63,37 @@ public class PostServiceImple implements PostService {
         Post updatepost = this.postRepo.save(post);
         return this.modelMapper.map(updatepost, PostDTO.class);
     }
+//======================================= Delete post===============================================
 
     @Override
     public String deletePost(Integer postId) {
-        return "";
+        Post post = this.postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "Post Id", postId));
+        postRepo.deleteById(postId);
+        return "Post delete Successfully";
     }
 
+//========================================= Get All the Post =============================================
+
+    /*
+     * for Gettig all post we need to implementation pagination
+     * by import "import org.springframework.data.domain.Pageable;"
+     *
+     **/
     @Override
     public PostResponce getAllPost(Integer pageNumber, Integer pageSize, String sortBy, String sortDir) {
+//        List<Post> allPosts = this.postRepo.findAll();
+//        List<PostDTO> postDTOS = allPosts.stream().map((post) -> modelMapper.map(post, PostDTO.class)).toList();
         return null;
+
     }
 
     //======================================= Get Post By Id===============================================
-    
+
     @Override
     public PostDTO getPostById(Integer postId) {
         Post post = this.postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post", "PostId", postId));
-
         return this.modelMapper.map(post, PostDTO.class);
     }
 
@@ -113,6 +127,10 @@ public class PostServiceImple implements PostService {
 
     @Override
     public List<PostDTO> searchPosts(String keyword) {
-        return List.of();
+        List<Post> posts = this.postRepo.findByTitleContaining(keyword);
+        List<PostDTO> postDtos = posts.stream()
+                .map((post) -> this.modelMapper.map(post, PostDTO.class))
+                .collect(Collectors.toList());
+        return postDtos;
     }
 }

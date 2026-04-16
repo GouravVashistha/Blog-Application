@@ -1,5 +1,6 @@
 package com.blog_app_apis.controllers;
 
+import com.blog_app_apis.dtos.ApiResponse;
 import com.blog_app_apis.dtos.PostDTO;
 import com.blog_app_apis.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,26 @@ public class PostController {
     public ResponseEntity<PostDTO> UpdatePost(@RequestBody PostDTO postDto, @PathVariable Integer postId) {
         PostDTO updatePost = this.postService.updatePost(postDto, postId);
         return new ResponseEntity<PostDTO>(updatePost, HttpStatus.OK);
+    }
+
+    //======================================= Get Post By Id ==========================================
+    @GetMapping("/GetPost/{postId}")
+    public ResponseEntity<PostDTO> getPostById(@PathVariable Integer postId) {
+        return ResponseEntity.ok(this.postService.getPostById(postId));
+    }
+    //======================================= Delete Post By Id ========================================
+
+    @DeleteMapping("/deletePost/{postId}")
+    public ResponseEntity<ApiResponse> deletePost(@PathVariable Integer postId) {
+        this.postService.deletePost(postId);
+        return new ResponseEntity<ApiResponse>(new ApiResponse("Post Deleted Successfully !!", true), HttpStatus.OK);
+    }
+    //=======================================Search=================================================
+
+    @GetMapping("/post/search/{keywords}")
+    public ResponseEntity<List<PostDTO>> searchPostByTitile(@PathVariable("keywords") String keywords) {
+        List<PostDTO> result = this.postService.searchPosts(keywords);
+        return new ResponseEntity<List<PostDTO>>(result, HttpStatus.OK);
     }
 
 }

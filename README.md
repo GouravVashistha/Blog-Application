@@ -181,7 +181,7 @@ Controller → Service → Repository → Database
 ## 📧 Contact
 
 * GitHub: https://github.com/GouravVashistha
-* Email: (add your email here)
+* Email: gvashistha4@gmail.com
 
 ---
 
