@@ -19,7 +19,7 @@ public class PostController {
     @Autowired
     private PostService postService;
 
-    //======================================= Create Post==============================================
+    //======================================= Create Post ==============================================
 
     @PostMapping("/user/{userId}/category/{categoryId}/posts")
     public ResponseEntity<PostDTO> createPost(@RequestBody PostDTO postDTO,
@@ -64,13 +64,16 @@ public class PostController {
         this.postService.deletePost(postId);
         return new ResponseEntity<ApiResponse>(new ApiResponse("Post Deleted Successfully !!", true), HttpStatus.OK);
     }
-    //=======================================Search=================================================
+
+    //======================================= Search ====================================================
 
     @GetMapping("/post/search/{keywords}")
     public ResponseEntity<List<PostDTO>> searchPostByTitile(@PathVariable("keywords") String keywords) {
         List<PostDTO> result = this.postService.searchPosts(keywords);
         return new ResponseEntity<List<PostDTO>>(result, HttpStatus.OK);
     }
+
+    //======================================= Get ALL Post =================================================
 
     @GetMapping("/allposts")
     public ResponseEntity<PostResponce> getAllPost(@RequestParam(value = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
