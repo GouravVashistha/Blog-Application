@@ -25,5 +25,7 @@ public class PostDTO {
 
     private UserDTO user;
 
+
     private Set<CommentDTO> comments = new HashSet<>();
+
 }
