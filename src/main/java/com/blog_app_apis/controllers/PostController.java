@@ -4,12 +4,20 @@ import com.blog_app_apis.config.AppConstants;
 import com.blog_app_apis.dtos.ApiResponse;
 import com.blog_app_apis.dtos.PostDTO;
 import com.blog_app_apis.dtos.PostResponce;
+import com.blog_app_apis.service.FileService;
 import com.blog_app_apis.service.PostService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 @RestController
@@ -19,6 +27,11 @@ public class PostController {
     @Autowired
     private PostService postService;
 
+    @Autowired
+    private FileService fileService;
+
+    @Value("${project.image}")
+    private String path;
     //======================================= Create Post ==============================================
 
     @PostMapping("/user/{userId}/category/{categoryId}/posts")
@@ -84,4 +97,26 @@ public class PostController {
         PostResponce postResponce = this.postService.getAllPost(pageNumber, pageSize, sortBy, sortDir);
         return new ResponseEntity<PostResponce>(postResponce, HttpStatus.OK);
     }
+
+    //=======================================Post Image Upload===========================================
+
+    @PostMapping("/post/image/upload/{postId}")
+    public ResponseEntity<PostDTO> uploadPostImage(@RequestParam("image") MultipartFile image, @PathVariable Integer postId) throws IOException {
+        PostDTO postDto = this.postService.getPostById(postId);
+        String fileName = this.fileService.uploadImage(path, image);
+        postDto.setImageName(fileName);
+        PostDTO updatePost = this.postService.updatePost(postDto, postId);
+        return new ResponseEntity<PostDTO>(updatePost, HttpStatus.OK);
+    }
+
+    //========================================method to serve files===================================
+
+    @GetMapping(value = "/post/image/{imageName}", produces = MediaType.IMAGE_JPEG_VALUE)
+    public void downloadImage(@PathVariable("imageName") String imageName, HttpServletResponse response) throws IOException {
+        InputStream resource = this.fileService.getResource(path, imageName);
+        response.setContentType(MediaType.IMAGE_JPEG_VALUE);
+        StreamUtils.copy(resource, response.getOutputStream());
+
+    }
+
 }
