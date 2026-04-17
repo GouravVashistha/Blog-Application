@@ -28,6 +28,7 @@ public class User {
     private String password;
     private String about;
 
+    //Ek User → multiple Posts likh sakta hai
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Post> posts = new ArrayList<>();
 
