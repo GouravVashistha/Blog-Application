@@ -54,10 +54,10 @@ public class SecurityConfig {
 //      Users must provide valid username and password
 
 // HTTP Basic Authentication Configuration
-// Purpose: Enable username and password based authentication
+// Purpose: Enable username and password-based authentication
 // HOW IT WORKS:
 //   1. Client sends Authorization header: Authorization: Basic base64(username:password)
-//   2. Server decodes and validates the credentials
+//   2. Server decodes and validates credentials
 //   3. If valid → Access granted; If invalid → 401 Unauthorized response
 // WHY USE IT:
 //   1. Simple to implement for REST APIs

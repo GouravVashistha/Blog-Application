@@ -34,4 +34,10 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private Set<Comment> comments = new HashSet<>();
+
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinTable(name = "user_role",
+            joinColumns = @JoinColumn(name = "users", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role", referencedColumnName = "id"))
+    private Set<Role> roles = new HashSet<>();
 }
