@@ -1,10 +1,16 @@
 package com.blog_app_apis.config;
 
+import com.blog_app_apis.security.CustomUserDetailService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -24,16 +30,43 @@ public class SecurityConfig {
      * @return - SecurityFilterChain with configured security rules
      * @throws Exception - If any error occurs during security configuration
      */
+
+    @Autowired
+    private CustomUserDetailService customUserDetailService;
+
+    /**
+     * SecurityFilterChain Bean (Spring Security 6.0+ approach)
+     * Purpose: Creates and returns a security filter chain with HTTP Basic authentication
+     * Uses CustomUserDetailService for loading user details from database
+     *
+     * @param http - HttpSecurity object used to configure security settings
+     * @return - SecurityFilterChain with configured security rules
+     * @throws Exception - If any error occurs during security configuration
+     */
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Disable CSRF protection (REST APIs don't need it)
                 .csrf(AbstractHttpConfigurer::disable)
+                // Authorize all HTTP requests
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest()
-                        .authenticated()
+                        .authenticated()  // All requests require authentication
                 )
+                // Enable HTTP Basic authentication
                 .httpBasic(Customizer.withDefaults());
         return http.build();
     }
+
+
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(this.customUserDetailService).passwordEncoder(passwordEncoder());
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
 }
 // CSRF (Cross-Site Request Forgery) Protection Disabled
 // WHY: REST APIs don't need CSRF protection because:
