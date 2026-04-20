@@ -18,24 +18,28 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User implements UserDetails {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private int id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @Column(name = "user_name", nullable = false, length = 100)
     private String name;
+
     @Column(name = "user_email", unique = true, nullable = false, length = 100)
     private String email;
+
+    @Column(nullable = false)
     private String password;
+
     private String about;
 
-    //Ek User → multiple Posts likh sakta hai
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Post> posts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<Comment> comments = new HashSet<>();
 
-    // Many users ↔ many roles
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_role",
@@ -46,8 +50,9 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<SimpleGrantedAuthority> authorities = this.roles.stream().map((role -> new SimpleGrantedAuthority(role.getName()))).toList();
-        return authorities;
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .toList();
     }
 
     @Override

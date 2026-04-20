@@ -9,13 +9,9 @@ import com.blog_app_apis.service.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -42,7 +38,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO updateUser(UserDTO userDTO, Integer userId) throws InvalidMailException {
 
         if (userRepo.findByEmail(userDTO.getEmail())
-                .filter(u -> u.getId() != userId)
+                .filter(u -> !u.getId().equals(userId))
                 .isPresent()) {
             throw new InvalidMailException("Email already in use");
         }
