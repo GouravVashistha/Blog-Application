@@ -5,5 +5,5 @@ public class AppConstants {
     public static final String PAGE_SIZE = "5";
     public static final String SORT_BY = "postId";
     public static final String SORT_DIR = "asc";
-    public static final String DETAIL_NOT_FOUND_eXCEPTION = "fill the Details";
+    public static final String DETAIL_NOT_FOUND_EXCEPTION = "fill the Details";
 }
