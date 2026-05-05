@@ -1,14 +1,18 @@
 package com.blog_app_apis.serviceImpl;
 
+import com.blog_app_apis.Entity.Role;
 import com.blog_app_apis.Entity.User;
+import com.blog_app_apis.config.AppConstants;
 import com.blog_app_apis.dtos.UserDTO;
 import com.blog_app_apis.exceptions.InvalidMailException;
 import com.blog_app_apis.exceptions.ResourceNotFoundException;
+import com.blog_app_apis.repository.RoleRepository;
 import com.blog_app_apis.repository.UserRepo;
 import com.blog_app_apis.service.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +25,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private RoleRepository roleRepository;
+
 
     @Override
     public UserDTO createUser(UserDTO userDTO) throws InvalidMailException {
@@ -83,6 +93,20 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Integer userId) {
         User user = getUserOrThrow(userId);
         this.userRepo.delete(user);
+    }
+
+    @Override
+    public UserDTO registerNewUser(UserDTO userDto) {
+        User user = this.modelMapper.map(userDto, User.class);
+        //encoded password
+        user.setPassword(this.passwordEncoder.encode(user.getPassword()));
+        //roles
+        Role role = this.roleRepository.findById(AppConstants.NORMAL_USER).get();
+
+        user.getRoles().add(role);
+
+        User newuser = this.userRepo.save(user);
+        return this.modelMapper.map(newuser, UserDTO.class);
     }
 
 

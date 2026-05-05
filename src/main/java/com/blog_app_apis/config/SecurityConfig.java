@@ -1,109 +1,157 @@
 package com.blog_app_apis.config;
 
 import com.blog_app_apis.security.CustomUserDetailService;
+import com.blog_app_apis.security.JwtAuthenticationEntryPoint;
+import com.blog_app_apis.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * SecurityConfig Class
- * Purpose: Configures Spring Security settings for the Blog App API
- * Defines authentication and authorization rules for all HTTP requests
+ * SecurityConfig
+ * <p>
+ * Purpose:
+ * Configures Spring Security for JWT-based authentication in a stateless REST API.
+ * <p>
+ * Key Concepts:
+ * - No session management (stateless)
+ * - JWT used for authentication
+ * - Custom filter validates token on each request
  */
-@Configuration  // Indicates this class contains Spring configuration beans
-@EnableWebSecurity  // Enables Spring Security web security features for this application
+@Configuration
+@EnableWebSecurity
 public class SecurityConfig {
-
-    /**
-     * SecurityFilterChain Bean
-     * Purpose: Creates and returns a security filter chain that defines how HTTP requests should be secured
-     *
-     * @param http - HttpSecurity object used to configure security settings
-     * @return - SecurityFilterChain with configured security rules
-     * @throws Exception - If any error occurs during security configuration
-     */
 
     @Autowired
     private CustomUserDetailService customUserDetailService;
 
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     /**
-     * SecurityFilterChain Bean (Spring Security 6.0+ approach)
-     * Purpose: Creates and returns a security filter chain with HTTP Basic authentication
-     * Uses CustomUserDetailService for loading user details from database
-     *
-     * @param http - HttpSecurity object used to configure security settings
-     * @return - SecurityFilterChain with configured security rules
-     * @throws Exception - If any error occurs during security configuration
+     * SecurityFilterChain Bean
+     * <p>
+     * Defines how HTTP requests are secured.
+     * This is the central configuration point for Spring Security.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                // Disable CSRF protection (REST APIs don't need it)
-                .csrf(AbstractHttpConfigurer::disable)
-                // Authorize all HTTP requests
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest()
-                        .authenticated()  // All requests require authentication
+                /**
+                 * CSRF Disabled
+                 *
+                 * WHY:
+                 * - CSRF protection is required when authentication is cookie-based
+                 * - In this application, JWT is sent via Authorization header
+                 * - Headers are NOT automatically sent by browser → no CSRF risk
+                 *
+                 * ⚠️ If JWT is stored in cookies → CSRF must be enabled again
+                 */
+                .csrf(csrf -> csrf.disable())
+
+                /**
+                 * Exception Handling
+                 *
+                 * Handles unauthorized access attempts.
+                 *
+                 * Flow:
+                 * - If user is not authenticated → JwtAuthenticationEntryPoint is triggered
+                 * - Returns HTTP 401 Unauthorized instead of default login page
+                 */
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
-                // Enable HTTP Basic authentication
-                .httpBasic(Customizer.withDefaults());
+
+                /**
+                 * Session Management
+                 *
+                 * WHY:
+                 * - JWT is stateless → no session needed
+                 * - Each request must contain authentication token
+                 *
+                 * Effect:
+                 * - Spring will NOT create or use HttpSession
+                 */
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                /**
+                 * Authorization Rules
+                 *
+                 * Defines which endpoints are public and which require authentication
+                 *
+                 * Rules:
+                 * - /api/v1/auth/** → Public (login/register)
+                 * - /auth/** → Public
+                 * - /v3/api-docs → Public (Swagger)
+                 * - All other endpoints → Require authentication
+                 */
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/v3/api-docs").permitAll()
+                        .anyRequest().authenticated()
+                );
+
+        /**
+         * JWT Filter Configuration
+         *
+         * WHY:
+         * - Validates JWT before request reaches controller
+         *
+         * Flow:
+         * 1. Extract token from Authorization header
+         * 2. Validate token (signature + expiry)
+         * 3. Load user details
+         * 4. Set authentication in SecurityContextHolder
+         *
+         * Placement:
+         * - Runs before UsernamePasswordAuthenticationFilter
+         */
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
-
-//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-//        auth.userDetailsService(this.customUserDetailService).passwordEncoder(passwordEncoder());
-//    }
-
+    /**
+     * PasswordEncoder Bean
+     * <p>
+     * Uses BCrypt hashing algorithm.
+     * <p>
+     * WHY:
+     * - Passwords must never be stored in plain text
+     * - BCrypt provides hashing + salting
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * AuthenticationManager Bean
+     * <p>
+     * Required for authenticating user credentials during login.
+     * <p>
+     * HOW:
+     * - Provided by AuthenticationConfiguration
+     * - Internally uses CustomUserDetailService
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 }
-// CSRF (Cross-Site Request Forgery) Protection Disabled
-// WHY: REST APIs don't need CSRF protection because:
-//      1. They use stateless authentication (JWT or HTTP Basic)
-//      2. Clients are not browsers, so CSRF attacks are not applicable
-//      3. Mobile apps and Postman requests won't have CSRF tokens
-//      4. CSRF is mainly for form-based web applications, not APIs
-
-
-// Authorization Configuration for HTTP Requests
-// Purpose: Define which URLs require authentication and which are public
-// We're using the new lambda-based configuration (Spring Security 6.0+)
-// anyRequest() - Applies to ALL HTTP requests (any URL path)
-// WHY: We want to secure the entire API by default
-
-// authenticated() - Requires user to be authenticated/logged in
-// WHY: Only authorized users should access the API
-//      Users must provide valid username and password
-
-// HTTP Basic Authentication Configuration
-// Purpose: Enable username and password-based authentication
-// HOW IT WORKS:
-//   1. Client sends Authorization header: Authorization: Basic base64(username:password)
-//   2. Server decodes and validates credentials
-//   3. If valid → Access granted; If invalid → 401 Unauthorized response
-// WHY USE IT:
-//   1. Simple to implement for REST APIs
-//   2. No session required (stateless)
-//   3. Works well with Postman and curl commands
-//   4. Good for testing and basic authentication
-// Customizer.withDefaults() - Uses Spring's default HTTP Basic settings
-
-// Build and return the configured SecurityFilterChain
-// This chain will be applied to all HTTP requests in the application
