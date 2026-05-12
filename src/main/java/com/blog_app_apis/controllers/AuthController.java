@@ -2,6 +2,8 @@ package com.blog_app_apis.controllers;
 
 import com.blog_app_apis.Entity.JwtAuthRequest;
 import com.blog_app_apis.Entity.JwtAuthResponce;
+import com.blog_app_apis.dtos.AuthErrorResponse;
+import com.blog_app_apis.dtos.AuthResponse;
 import com.blog_app_apis.dtos.UserDTO;
 import com.blog_app_apis.exceptions.UsernameNotFoundException;
 import com.blog_app_apis.security.JwtTokenHelper;
@@ -112,123 +114,244 @@ public class AuthController {
      * @param request - JwtAuthRequest containing username and password
      * @return ResponseEntity with JWT token on success or error details on failure
      */
+    /**
+     * IMPROVED LOGIN API ENDPOINT
+     * 
+     * Features:
+     * - Comprehensive input validation with detailed error messages
+     * - Structured response with success flag, message, token, and timestamp
+     * - Detailed logging for debugging and security auditing
+     * - Better exception handling with specific HTTP status codes
+     * - Response includes authenticated user information
+     */
     @PostMapping("/login")
     public ResponseEntity<?> createToken(@RequestBody JwtAuthRequest request) {
-
+        long startTime = System.currentTimeMillis();
+        String clientUsername = null;
+        
         try {
-            // Validate input parameters
-            if (request == null || request.getUsername() == null || request.getPassword() == null) {
+            // ========== STEP 1: INPUT VALIDATION ==========
+            System.out.println("=== LOGIN REQUEST INITIATED ===");
+            
+            // Validate request object is not null
+            if (request == null) {
+                System.out.println("❌ Validation Failed: Request body is null");
+                AuthErrorResponse errorResponse = new AuthErrorResponse(
+                    false,
+                    "Validation Failed",
+                    "Request body cannot be null",
+                    System.currentTimeMillis()
+                );
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Error: Username and password are required for login");
+                        .body(errorResponse);
             }
-
-            if (request.getUsername().trim().isEmpty() || request.getPassword().trim().isEmpty()) {
+            
+            // Validate username is provided
+            if (request.getUsername() == null || request.getUsername().isBlank()) {
+                System.out.println("❌ Validation Failed: Username is missing or empty");
+                AuthErrorResponse errorResponse = new AuthErrorResponse(
+                    false,
+                    "Validation Failed",
+                    "Username (email) is required and cannot be empty",
+                    System.currentTimeMillis()
+                );
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Error: Username and password cannot be empty");
+                        .body(errorResponse);
             }
+            
+            // Validate password is provided
+            if (request.getPassword() == null || request.getPassword().isBlank()) {
+                System.out.println("❌ Validation Failed: Password is missing or empty");
+                AuthErrorResponse errorResponse = new AuthErrorResponse(
+                    false,
+                    "Validation Failed",
+                    "Password is required and cannot be empty",
+                    System.currentTimeMillis()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
+            
+            // Sanitize username (trim whitespace)
+            clientUsername = request.getUsername().trim();
+            String clientPassword = request.getPassword();
+            
+            System.out.println("✓ Validation Passed");
+            System.out.println("  → Username: " + clientUsername);
+            System.out.println("  → Password length: " + clientPassword.length() + " characters");
 
-            // Step 1: Authenticate the user with provided credentials
-            // This method validates username and password against database
-            this.authenticate(request.getUsername(), request.getPassword());
-            System.out.println("Successfully authenticated user: " + request.getUsername());
+            // ========== STEP 2: AUTHENTICATE USER ==========
+            System.out.println("\n[STEP 1] Authenticating user credentials against database...");
+            this.authenticate(clientUsername, clientPassword);
+            System.out.println("✓ User authentication successful");
 
-            // Step 2: Load user details from database using authenticated username
-            // Returns UserDetails object with username, password, authorities, and account status
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(request.getUsername());
+            // ========== STEP 3: LOAD USER DETAILS ==========
+            System.out.println("\n[STEP 2] Loading user details from database...");
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(clientUsername);
+            System.out.println("✓ User details loaded successfully");
+            System.out.println("  → User authorities/roles: " + userDetails.getAuthorities());
 
-            // Step 3: Generate JWT token for the authenticated user
-            // Token contains username, issued time, expiration time, and signature
+            // ========== STEP 4: GENERATE JWT TOKEN ==========
+            System.out.println("\n[STEP 3] Generating JWT token...");
             String token = this.jwtTokenHelper.generateToken(userDetails);
-            System.out.println("JWT token successfully generated for user: " + request.getUsername());
+            System.out.println("✓ JWT token generated successfully");
+            System.out.println("  → Token created at: " + new java.util.Date());
+            System.out.println("  → Token length: " + token.length() + " characters");
 
-            // Step 4: Prepare JWT response object with token
-            JwtAuthResponce response = new JwtAuthResponce();
-            response.setToken(token);
-
-            // Step 5: Return response with HTTP 200 OK status and token
-            return ResponseEntity.ok(response);
+            // ========== STEP 5: BUILD SUCCESS RESPONSE ==========
+            System.out.println("\n[STEP 4] Building success response...");
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            
+            AuthResponse successResponse = new AuthResponse(
+                true,                                          // success flag
+                "Authentication successful. JWT token generated.",
+                token,                                         // JWT token
+                clientUsername,                                // authenticated username
+                System.currentTimeMillis()                     // response timestamp
+            );
+            
+            System.out.println("✓ Response built successfully");
+            System.out.println("\n=== LOGIN COMPLETED SUCCESSFULLY ===");
+            System.out.println("  → Total time: " + duration + " ms");
+            System.out.println("  → User: " + clientUsername);
+            
+            return ResponseEntity.ok(successResponse);
 
         } catch (BadCredentialsException ex) {
-            // Exception: Thrown when password is incorrect for the user
-            // Scenario: User exists but password does not match
-            // HTTP Status: 401 UNAUTHORIZED
-            // Action: Client should verify password and retry
-            System.out.println("Authentication failed: Bad credentials for user " + request.getUsername());
+            // ❌ EXCEPTION: Password incorrect
+            System.out.println("\n❌ AUTHENTICATION FAILED: BadCredentialsException");
+            System.out.println("  → User: " + clientUsername);
+            System.out.println("  → Reason: Password does not match encrypted password in database");
+            System.out.println("  → Possible cause: User entered wrong password");
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "Authentication Failed",
+                "Invalid username or password. Please try again.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body("Authentication failed: Invalid username or password provided");
+                    .body(errorResponse);
 
         } catch (DisabledException ex) {
-            // Exception: Thrown when user account is disabled/inactive
-            // Scenario: User exists in database but account is marked as inactive
-            // HTTP Status: 403 FORBIDDEN
-            // Action: Administrator needs to enable the account
-            System.out.println("Authentication failed: User account is disabled for user " + request.getUsername());
+            // ❌ EXCEPTION: User account disabled
+            System.out.println("\n❌ AUTHENTICATION FAILED: DisabledException");
+            System.out.println("  → User: " + clientUsername);
+            System.out.println("  → Reason: User account is marked as disabled/inactive");
+            System.out.println("  → Action needed: Administrator must enable the account");
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "Account Disabled",
+                "Your account is currently disabled. Please contact the administrator.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.FORBIDDEN)
-                    .body("Authentication failed: Your account is disabled. Please contact administrator");
+                    .body(errorResponse);
 
         } catch (UsernameNotFoundException ex) {
-            // Exception: Thrown when user email is not found in database
-            // Scenario: Email does not match any user record
-            // HTTP Status: 404 NOT_FOUND
-            // Action: User should register first or verify email address
-            System.out.println("Authentication failed: User not found with username " + request.getUsername());
+            // ❌ EXCEPTION: User not found in database
+            System.out.println("\n❌ AUTHENTICATION FAILED: UsernameNotFoundException");
+            System.out.println("  → Username/Email attempted: " + clientUsername);
+            System.out.println("  → Reason: No user found with this email in database");
+            System.out.println("  → Action needed: User must register first");
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "User Not Found",
+                "No account found with this email. Please register first.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
-                    .body("Authentication failed: User account not found. Please register first");
+                    .body(errorResponse);
 
         } catch (ExpiredJwtException ex) {
-            // Exception: Thrown when JWT token has expired
-            // Scenario: Token timestamp is before current time
-            // HTTP Status: 401 UNAUTHORIZED
-            // Action: Client should perform login again to get fresh token
-            System.out.println("JWT validation failed: Token has expired");
+            // ❌ EXCEPTION: JWT token expired (shouldn't happen during login, but handle anyway)
+            System.out.println("\n❌ TOKEN VALIDATION FAILED: ExpiredJwtException");
+            System.out.println("  → Reason: JWT token has exceeded its expiration time");
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "Token Expired",
+                "Your authentication token has expired. Please login again.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body("JWT error: Token has expired. Please login again");
+                    .body(errorResponse);
 
         } catch (SignatureException ex) {
-            // Exception: Thrown when JWT token signature is invalid
-            // Scenario: Token was tampered with or signed with different key
-            // HTTP Status: 401 UNAUTHORIZED
-            // Action: Reject request, possible security breach
-            System.out.println("JWT validation failed: Invalid token signature - possible tampering detected");
+            // ❌ EXCEPTION: Token signature invalid
+            System.out.println("\n❌ TOKEN VALIDATION FAILED: SignatureException");
+            System.out.println("  → Reason: JWT token signature is invalid");
+            System.out.println("  → Possible security issue: Token may have been tampered with");
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "Invalid Token",
+                "Token signature is invalid. Possible security breach detected.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body("JWT error: Invalid token signature. Token may have been tampered with");
+                    .body(errorResponse);
 
         } catch (MalformedJwtException ex) {
-            // Exception: Thrown when JWT token format is corrupted
-            // Scenario: Token structure is invalid, missing parts, or wrong encoding
-            // HTTP Status: 400 BAD_REQUEST
-            // Action: Client should provide valid token format
-            System.out.println("JWT validation failed: Malformed JWT token format");
+            // ❌ EXCEPTION: Token format corrupted
+            System.out.println("\n❌ TOKEN VALIDATION FAILED: MalformedJwtException");
+            System.out.println("  → Reason: JWT token format is corrupted or invalid");
+            System.out.println("  → Expected format: Header.Payload.Signature");
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "Malformed Token",
+                "Token format is invalid or corrupted.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body("JWT error: Invalid token format. Token structure is corrupted");
+                    .body(errorResponse);
 
         } catch (IllegalArgumentException ex) {
-            // Exception: Thrown when JWT token is empty or null
-            // Scenario: Authorization header missing or empty token provided
-            // HTTP Status: 400 BAD_REQUEST
-            // Action: Client should provide token in Authorization header
-            System.out.println("JWT validation failed: Empty or null JWT token");
+            // ❌ EXCEPTION: Token is empty or null
+            System.out.println("\n❌ TOKEN VALIDATION FAILED: IllegalArgumentException");
+            System.out.println("  → Reason: JWT token is empty or null");
+            System.out.println("  → Expected: Valid token in Authorization header");
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "Empty Token",
+                "Token cannot be empty or null. Please provide a valid token.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body("JWT error: Token cannot be empty. Please provide valid JWT token");
+                    .body(errorResponse);
 
         } catch (Exception ex) {
-            // Catch all unexpected exceptions during login process
-            // HTTP Status: 500 INTERNAL_SERVER_ERROR
-            // Action: Log error, notify administrator, provide generic message
-            System.out.println("Unexpected error during login process: " + ex.getClass().getName());
+            // ❌ EXCEPTION: Unexpected error
+            System.out.println("\n❌ UNEXPECTED ERROR OCCURRED:");
+            System.out.println("  → Exception type: " + ex.getClass().getName());
+            System.out.println("  → Exception message: " + ex.getMessage());
+            System.out.println("  → User attempted: " + clientUsername);
             ex.printStackTrace();
+            
+            AuthErrorResponse errorResponse = new AuthErrorResponse(
+                false,
+                "Internal Server Error",
+                "An unexpected error occurred. Please contact support.",
+                System.currentTimeMillis()
+            );
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: Unexpected error occurred during authentication. Please try again later. Details: " + ex.getMessage());
+                    .body(errorResponse);
         }
     }
 
@@ -260,52 +383,79 @@ public class AuthController {
      * @throws UsernameNotFoundException if user email does not exist in database
      * @throws Exception for any other authentication-related errors
      */
+    /**
+     * IMPROVED AUTHENTICATE METHOD
+     * 
+     * Purpose: 
+     * Validates user credentials with comprehensive error handling and detailed logging
+     * 
+     * Process:
+     * 1. Create UsernamePasswordAuthenticationToken with provided credentials
+     * 2. Pass token to AuthenticationManager for validation
+     * 3. AuthenticationManager internally:
+     *    - Loads user from database using CustomUserDetailService
+     *    - Compares plain password with encrypted password using BCryptPasswordEncoder
+     *    - Verifies user account status (enabled, non-locked, credentials non-expired)
+     * 4. If any check fails, throw appropriate SecurityException
+     * 5. If all checks pass, authentication is successful (method returns normally)
+     * 
+     * Security Checks Performed by AuthenticationManager:
+     * - Password validation: matches(plainPassword, encryptedPassword)
+     * - Account enabled: user.isEnabled() == true
+     * - Account non-locked: user.isAccountNonLocked() == true
+     * - Account non-expired: user.isAccountNonExpired() == true
+     * - Credentials non-expired: user.isCredentialsNonExpired() == true
+     *
+     * @param username User's email address (used as username)
+     * @param password User's password in plain text
+     * @throws BadCredentialsException If password does not match database password
+     * @throws DisabledException If user account is disabled
+     * @throws UsernameNotFoundException If user email not found in database
+     * @throws Exception For any other authentication-related errors
+     */
     private void authenticate(String username, String password) {
-
         try {
-            // Step 1: Create authentication token with provided username and password
-            // This token is used by AuthenticationManager to validate credentials
-            // Token contains unauthenticated user details
+            // Step 1: Create authentication token (unauthenticated)
+            System.out.println("  → Creating authentication token with provided credentials...");
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(username, password);
+            // Token state: authenticated = false (not yet verified)
 
-            // Step 2: Pass authentication token to AuthenticationManager
-            // Manager validates credentials against database and user details service
-            // Manager uses:
-            // - CustomUserDetailService to load user from database
-            // - PasswordEncoder (BCryptPasswordEncoder) to validate password
-            // - User authorities to check permissions
+            // Step 2: Pass to AuthenticationManager for validation
+            System.out.println("  → Sending credentials to AuthenticationManager for validation...");
             this.authenticationManager.authenticate(authenticationToken);
+            // AuthenticationManager will throw exception if validation fails
             
-            // If we reach here, authentication was successful
-            System.out.println("User authentication successful: " + username);
+            // Step 3: If we reach here, authentication was successful
+            System.out.println("  → ✓ All security checks passed!");
+            System.out.println("  → User account is active and credentials are valid");
 
         } catch (BadCredentialsException ex) {
-            // Caught when password does not match encrypted password in database
-            // Reason: Authentication comparison failed
-            // Action: Log and throw exception to be caught by login endpoint
-            System.out.println("Authentication error: Bad credentials for user " + username);
-            throw new BadCredentialsException("Invalid password for user: " + username);
+            // ❌ EXCEPTION: Password incorrect or user not found by AuthenticationManager
+            System.out.println("  → ❌ BadCredentialsException caught");
+            System.out.println("     Reason: Password does not match the encrypted password in database");
+            System.out.println("     OR: User email was not found (checked before password)");
+            throw new BadCredentialsException("Invalid credentials for user: " + username);
 
         } catch (DisabledException ex) {
-            // Caught when user account is marked as inactive/disabled
-            // Reason: User.isEnabled() returns false
-            // Action: Log and throw exception to be caught by login endpoint
-            System.out.println("Authentication error: User account is disabled for user " + username);
+            // ❌ EXCEPTION: User account is disabled
+            System.out.println("  → ❌ DisabledException caught");
+            System.out.println("     Reason: User.isEnabled() returned false");
+            System.out.println("     Action: Administrator must enable this account in database");
             throw new DisabledException("User account is disabled: " + username);
 
         } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
-            // Caught when CustomUserDetailService cannot find user by email
-            // Reason: User email does not exist in database
-            // Action: Convert to our custom UsernameNotFoundException for consistency
-            System.out.println("Authentication error: User not found - " + username);
+            // ❌ EXCEPTION: User not found in database
+            System.out.println("  → ❌ UsernameNotFoundException caught (from Spring Security)");
+            System.out.println("     Reason: CustomUserDetailService could not find user by email");
+            System.out.println("     Action: User must register first or use correct email");
             throw new UsernameNotFoundException("User", "email", username);
 
         } catch (Exception ex) {
-            // Catch all other authentication errors
-            // Scenarios: Account locked, expired, null pointer, etc.
-            // Action: Log error details and throw as is
-            System.out.println("Authentication error: " + ex.getClass().getName() + " - " + ex.getMessage());
+            // ❌ EXCEPTION: Other authentication errors
+            System.out.println("  → ❌ Unexpected exception caught during authentication:");
+            System.out.println("     Exception type: " + ex.getClass().getSimpleName());
+            System.out.println("     Message: " + ex.getMessage());
             throw ex;
         }
     }
