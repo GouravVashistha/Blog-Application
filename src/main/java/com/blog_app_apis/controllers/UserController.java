@@ -39,7 +39,7 @@ public class UserController {
         return new ResponseEntity<ApiResponse>(new ApiResponse("User Deleted Successfully", true), HttpStatus.OK);
     }
 
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ADMIN')")
+    //    @PreAuthorize("hasRole('NORMAL_USER') or hasRole('ROLE_ADMIN')")
     @GetMapping("/AllUsers")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(this.userService.getAllUsers());
