@@ -205,16 +205,24 @@ public class AuthController {
             System.out.println("\n[STEP 4] Building success response...");
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
+            long tokenExpirationMs = 18000000; // 5 hours in milliseconds
+            long currentTimestamp = System.currentTimeMillis();
             
             AuthResponse successResponse = new AuthResponse(
                 true,                                          // success flag
                 "Authentication successful. JWT token generated.",
-                token,                                         // JWT token
+                "Bearer",                                      // tokenType
+                token,                                         // JWT token (raw)
+                "Bearer " + token,                             // bearerToken (pre-formatted)
                 clientUsername,                                // authenticated username
-                System.currentTimeMillis()                     // response timestamp
+                tokenExpirationMs,                             // expiresIn (5 hours)
+                currentTimestamp                               // response timestamp
             );
             
             System.out.println("✓ Response built successfully");
+            System.out.println("  → Token Type: " + successResponse.getTokenType());
+            System.out.println("  → Token Expires In: " + successResponse.getExpiresIn() + " ms (5 hours)");
+            System.out.println("  → Response includes pre-formatted Bearer token for convenience");
             System.out.println("\n=== LOGIN COMPLETED SUCCESSFULLY ===");
             System.out.println("  → Total time: " + duration + " ms");
             System.out.println("  → User: " + clientUsername);

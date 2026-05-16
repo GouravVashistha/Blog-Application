@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +31,7 @@ public class UserController {
         return ResponseEntity.ok(updateUser);
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    //    @PreAuthorize("hasRole('ADMIN_USER')")
     @DeleteMapping("/deleteUser/{userId}")
     public ResponseEntity<ApiResponse> deleteUser(@PathVariable Integer userId) {
         this.userService.deleteUser(userId);
