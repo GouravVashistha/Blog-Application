@@ -6,6 +6,7 @@ import com.blog_app_apis.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 /**
  * SecurityConfig
@@ -31,8 +33,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableWebMvc
 public class SecurityConfig {
-
+    public static final String[] PUBLIC_URLS = {
+            "/api/v1/auth/**",
+            "/auth/**",
+            "/v3/api-docs",
+            "/v2/api-docs",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/swagger-ui/index.html",
+            "/swagger-resources/**",
+            "/webjars/**"
+    };
     @Autowired
     private CustomUserDetailService customUserDetailService;
 
@@ -100,12 +114,12 @@ public class SecurityConfig {
                  * - /api/v1/auth/** → Public (login/register)
                  * - /auth/** → Public
                  * - /v3/api-docs → Public (Swagger)
-                 * - All other endpoints → Require authentication
+                 * - ALL GET requests → Public (read-only access)
+                 * - POST/PUT/DELETE → Require authentication (write operations)
                  */
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/v3/api-docs").permitAll()
+                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
