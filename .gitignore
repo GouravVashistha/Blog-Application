@@ -1,0 +1,45 @@
+# =========================================================================
+# COMBINED GITIGNORE FOR SPRING BOOT BACKEND & REACT FRONTEND
+# =========================================================================
+
+# ### IntelliJ IDEA & Editors ###
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ### Spring Boot Backend ###
+blog-app-apis/target/
+blog-app-apis/.mvn/wrapper/maven-wrapper.jar
+blog-app-apis/!**/src/main/**/target/
+blog-app-apis/!**/src/test/**/target/
+blog-app-apis/.apt_generated
+blog-app-apis/.classpath
+blog-app-apis/.factorypath
+blog-app-apis/.project
+blog-app-apis/.settings
+blog-app-apis/.springBeans
+blog-app-apis/.sts4-cache
+blog-app-apis/build/
+blog-app-apis/!**/src/main/**/build/
+blog-app-apis/!**/src/test/**/build/
+
+# ### React Frontend ###
+blog-app-react/node_modules/
+blog-app-react/dist/
+blog-app-react/dist-ssr/
+blog-app-react/*.local
+blog-app-react/logs/
+blog-app-react/*.log
+blog-app-react/npm-debug.log*
+blog-app-react/yarn-debug.log*
+blog-app-react/yarn-error.log*
+blog-app-react/pnpm-debug.log*
+blog-app-react/lerna-debug.log*
