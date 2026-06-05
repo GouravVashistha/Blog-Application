@@ -56,3 +56,4 @@ public class BlogAppApisApplication implements CommandLineRunner {
     }
 }
 // http://localhost:8080/v3/api-docs swager postman
+// http://localhost:8080/swagger-ui/index.html#/user-contrroller/updateUser
