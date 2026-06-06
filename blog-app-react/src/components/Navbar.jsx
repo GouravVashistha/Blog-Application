@@ -67,6 +67,13 @@ const Navbar = () => {
                   Dashboard
                 </Link>
               </li>
+              {isAdmin && (
+                <li>
+                  <Link to="/admin" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
+                    Admin Panel
+                  </Link>
+                </li>
+              )}
               <li className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="author-avatar" style={{ width: '24px', height: '24px', fontSize: '0.75rem' }}>
                   {user?.name ? user.name[0].toUpperCase() : 'U'}

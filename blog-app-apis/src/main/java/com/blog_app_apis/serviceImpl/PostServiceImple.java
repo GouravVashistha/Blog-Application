@@ -59,6 +59,15 @@ public class PostServiceImple implements PostService {
         Post post = this.postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post", "Post Id", postId));
 
+        // Get currently authenticated user details
+        String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN_USER"));
+
+        if (!post.getUser().getEmail().equals(currentUserEmail) && !isAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not authorized to update this post");
+        }
+
         post.setTitle(postDto.getTitle());
         post.setContent(postDto.getContent());
         post.setImageName(postDto.getImageName());
@@ -73,6 +82,16 @@ public class PostServiceImple implements PostService {
     public String deletePost(Integer postId) {
         Post post = this.postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post", "Post Id", postId));
+
+        // Get currently authenticated user details
+        String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN_USER"));
+
+        if (!post.getUser().getEmail().equals(currentUserEmail) && !isAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not authorized to delete this post");
+        }
+
         postRepo.deleteById(postId);
         return "Post delete Successfully";
     }

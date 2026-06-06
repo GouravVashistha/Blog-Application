@@ -125,6 +125,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/category", "/api/category/**").hasAuthority("ADMIN_USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/category", "/api/category/**").hasAuthority("ADMIN_USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/category", "/api/category/**").hasAuthority("ADMIN_USER")
                         .anyRequest().authenticated()
                 );
 

@@ -1,8 +1,10 @@
 package com.blog_app_apis;
 
 import com.blog_app_apis.Entity.Role;
+import com.blog_app_apis.Entity.User;
 import com.blog_app_apis.config.AppConstants;
 import com.blog_app_apis.repository.RoleRepository;
+import com.blog_app_apis.repository.UserRepo;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -20,6 +22,8 @@ public class BlogAppApisApplication implements CommandLineRunner {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private RoleRepository roleRepo;
+    @Autowired
+    private UserRepo userRepo;
 
     public static void main(String[] args) {
         SpringApplication.run(BlogAppApisApplication.class, args);
@@ -50,8 +54,21 @@ public class BlogAppApisApplication implements CommandLineRunner {
                 System.out.println(r.getName());
             });
 
-        } catch (Exception e) {
+            // Seed Admin User if not exists
+            if (this.userRepo.findByEmail("admin@gmail.com").isEmpty()) {
+                User admin = new User();
+                admin.setName("Admin User");
+                admin.setEmail("admin@gmail.com");
+                admin.setPassword(this.passwordEncoder.encode("admin123"));
+                admin.setAbout("System Administrator");
+                
+                admin.getRoles().add(role);
+                this.userRepo.save(admin);
+                System.out.println("Default admin user seeded successfully: admin@gmail.com / admin123");
+            }
 
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
